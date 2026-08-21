@@ -1,0 +1,6 @@
+{
+  "name": "LishNgajarr",
+  "description": "Aplikasi pengingat jadwal mengajar guru dengan notifikasi otomatis 5 menit sebelum kelas, pengaturan jam pelajaran & istirahat fleksibel, serta ekspor & impor jadwal.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
