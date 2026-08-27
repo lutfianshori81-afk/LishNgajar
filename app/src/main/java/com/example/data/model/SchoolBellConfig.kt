@@ -37,7 +37,10 @@ data class SchoolBellConfig(
     val soundPreset: String = "bell", // "bell", "chime", "whistle", "ping", "alarm", "system", "custom"
     val customSoundUri: String? = null, // Path file MP3 kustom dari perangkat
     val customSoundName: String? = null, // Nama file MP3 (misal: Bel_Sekolah.mp3)
-    val isVibrationEnabled: Boolean = true
+    val isVibrationEnabled: Boolean = true,
+
+    // Theme Mode: "SYSTEM", "LIGHT", "DARK"
+    val themeMode: String = "SYSTEM"
 ) {
     /**
      * Calculates the start and end time in minutes from midnight for a given period on a specific day.

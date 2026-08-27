@@ -4,7 +4,9 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,22 +20,30 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.Audiotrack
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Coffee
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.SettingsBrightness
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material.icons.filled.VolumeUp
@@ -45,6 +55,7 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -52,6 +63,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -66,16 +78,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.R
 import com.example.alarm.SoundHelper
 import com.example.data.model.BreakConfig
 import com.example.data.model.SchoolBellConfig
 import com.example.ui.components.ExportImportDialog
+import com.example.ui.components.NotificationLeadTimePickerDialog
 import com.example.ui.viewmodel.ScheduleViewModel
 import java.util.UUID
 
@@ -88,6 +104,7 @@ fun SettingsScreen(
     val context = LocalContext.current
     val currentConfig by viewModel.schoolConfig.collectAsState()
 
+    var themeMode by remember(currentConfig) { mutableStateOf(currentConfig.themeMode) }
     var schoolName by remember(currentConfig) { mutableStateOf(currentConfig.schoolName) }
     var startHour by remember(currentConfig) { mutableIntStateOf(currentConfig.startHour) }
     var startMinute by remember(currentConfig) { mutableIntStateOf(currentConfig.startMinute) }
@@ -116,6 +133,7 @@ fun SettingsScreen(
         }
     }
 
+    var showLeadTimePickerDialog by remember { mutableStateOf(false) }
     var showAddBreakDialog by remember { mutableStateOf(false) }
     var showAddFridayBreakDialog by remember { mutableStateOf(false) }
     var showExportImportDialog by remember { mutableStateOf(false) }
@@ -130,6 +148,119 @@ fun SettingsScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // App Brand & Teaching Schedule Logo Presentation Banner
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
+            ),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(54.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .border(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.img_simple_logo_1787738398485),
+                        contentDescription = "Logo Jadwal Mengajar",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "LishNgajar",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Aplikasi Jadwal Mengajar Guru & Notifikasi Bel Sekolah",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+
+        // Section: Tema & Keterbacaan Tampilan (Dark & Light Mode)
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Palette,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = "Tema & Keterbacaan Tampilan",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                Text(
+                    text = "Pilih tema dengan kontras tinggi yang dirancang khusus agar jadwal mudah dan jelas dibaca:",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf(
+                        Triple("SYSTEM", "Otomatis", Icons.Default.SettingsBrightness),
+                        Triple("LIGHT", "Terang", Icons.Default.LightMode),
+                        Triple("DARK", "Gelap", Icons.Default.DarkMode)
+                    ).forEach { (mode, label, icon) ->
+                        val isSelected = themeMode == mode
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = {
+                                themeMode = mode
+                                viewModel.saveSchoolConfig(currentConfig.copy(themeMode = mode))
+                            },
+                            leadingIcon = {
+                                Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp))
+                            },
+                            label = {
+                                Text(label, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .testTag("theme_chip_$mode"),
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                                selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimary
+                            )
+                        )
+                    }
+                }
+            }
+        }
         // Section Header: Pengaturan Sekolah & Jam Belajar Umum (Senin - Kamis, Sabtu)
         Card(
             shape = RoundedCornerShape(16.dp),
@@ -686,27 +817,93 @@ fun SettingsScreen(
 
                 Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
 
-                // Lead Time selector (5 menit sebelum pelajaran dimulai)
-                Column {
+                // TimePicker Lead Time Section (Menyesuaikan waktu notifikasi sebelum mengajar)
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = "Waktu Muncul Notifikasi Pengingat",
+                        text = "Waktu Pengingat Sebelum Masuk Kelas",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
-                        text = "Notifikasi berisi: Mapel, Jam ke, Jam mulai, & Ruang",
+                        text = "Sesuaikan berapa menit sebelum jam pelajaran dimulai notifikasi & suara pengingat berbunyi:",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        listOf(3, 5, 10, 15).forEach { mins ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(40.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            imageVector = Icons.Default.AccessTime,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onPrimary,
+                                            modifier = Modifier.size(22.dp)
+                                        )
+                                    }
+                                }
+                                Column {
+                                    Text(
+                                        text = "$leadTime Menit Sebelum",
+                                        fontWeight = FontWeight.Bold,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = "Pengingat berbunyi $leadTime mnt sebelum JP mulai",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+
+                            FilledTonalButton(
+                                onClick = { showLeadTimePickerDialog = true },
+                                modifier = Modifier.testTag("open_time_picker_button")
+                            ) {
+                                Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Atur Waktu")
+                            }
+                        }
+                    }
+
+                    // Quick Stepper & Presets
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        listOf(3, 5, 10, 15, 20, 30).forEach { mins ->
+                            val isSelected = leadTime == mins
                             FilterChip(
-                                selected = leadTime == mins,
+                                selected = isSelected,
                                 onClick = { leadTime = mins },
-                                label = { Text("$mins Menit Sebelum") }
+                                label = { Text("$mins mnt", fontSize = 12.sp) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                                ),
+                                modifier = Modifier.weight(1f)
                             )
                         }
                     }
@@ -927,6 +1124,7 @@ fun SettingsScreen(
                 OutlinedButton(
                     onClick = {
                         val tempConfig = currentConfig.copy(
+                            themeMode = themeMode,
                             leadTimeMinutes = leadTime,
                             isSoundEnabled = isSoundEnabled,
                             soundPreset = soundPreset,
@@ -1012,6 +1210,7 @@ fun SettingsScreen(
         Button(
             onClick = {
                 val newConfig = currentConfig.copy(
+                    themeMode = themeMode,
                     schoolName = schoolName.trim().ifBlank { "SMK Negeri 1 Pringapus" },
                     startHour = startHour,
                     startMinute = startMinute,
@@ -1044,6 +1243,18 @@ fun SettingsScreen(
         }
 
         Spacer(modifier = Modifier.height(20.dp))
+    }
+
+    // Lead Time Picker Dialog
+    if (showLeadTimePickerDialog) {
+        NotificationLeadTimePickerDialog(
+            currentMinutes = leadTime,
+            onDismiss = { showLeadTimePickerDialog = false },
+            onConfirm = { newMinutes ->
+                leadTime = newMinutes
+                showLeadTimePickerDialog = false
+            }
+        )
     }
 
     // Add Regular Break Dialog

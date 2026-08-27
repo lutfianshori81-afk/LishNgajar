@@ -24,6 +24,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
@@ -37,6 +39,8 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.TableChart
+import androidx.compose.material.icons.filled.Today
 import androidx.compose.material.icons.filled.ViewAgenda
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -47,6 +51,7 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.PrimaryTabRow
@@ -72,6 +77,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.ScheduleItem
 import com.example.data.model.SchoolBellConfig
+import com.example.ui.components.DailyTimetableView
 import com.example.ui.components.TimetableGridView
 import com.example.ui.viewmodel.ScheduleViewModel
 
@@ -85,12 +91,16 @@ fun ScheduleScreen(
     val schoolConfig by viewModel.schoolConfig.collectAsState()
     val selectedDay by viewModel.selectedDay.collectAsState()
     val todayStatus by viewModel.todayStatus.collectAsState()
+    val currentRealDay = remember { ScheduleViewModel.getCurrentDayOfWeek() }
 
-    var viewMode by remember { mutableIntStateOf(0) } // 0 = Agenda Harian, 1 = Tabel Matriks
+    // 0 = Tabel Jadwal Harian (default!), 1 = Kartu Agenda Harian, 2 = Matriks Mingguan
+    var viewMode by remember { mutableIntStateOf(0) }
 
     val daySchedules = allSchedules
         .filter { it.dayOfWeek == selectedDay }
         .sortedBy { it.startPeriod }
+
+    val activeDays = schoolConfig.activeDays.ifEmpty { listOf(1, 2, 3, 4, 5, 6) }
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -179,69 +189,105 @@ fun ScheduleScreen(
                 }
             }
 
-            // View Mode Toggle (Agenda Harian vs Tabel Matriks)
+            // DAY SELECTOR & SWITCHER HEADER (Navigasi Mudah Antar Hari)
             Surface(
                 color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 2.dp,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                TabRow(
-                    selectedTabIndex = viewMode,
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    contentColor = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Tab(
-                        selected = viewMode == 0,
-                        onClick = { viewMode = 0 },
-                        modifier = Modifier.testTag("tab_agenda"),
-                        text = {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Icon(Icons.Default.ViewAgenda, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Text("Agenda Harian", fontWeight = FontWeight.Bold)
-                            }
+                Column(modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp)) {
+                    // Previous / Next Day Navigation Bar
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        // Previous Day Button
+                        IconButton(
+                            onClick = {
+                                val prev = if (selectedDay <= 1) 6 else selectedDay - 1
+                                viewModel.setSelectedDay(prev)
+                            },
+                            modifier = Modifier.size(38.dp).testTag("btn_prev_day")
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Hari Sebelumnya",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
                         }
-                    )
-                    Tab(
-                        selected = viewMode == 1,
-                        onClick = { viewMode = 1 },
-                        modifier = Modifier.testTag("tab_matrix"),
-                        text = {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Icon(Icons.Default.CalendarViewMonth, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Text("Tabel Jadwal (Matrix)", fontWeight = FontWeight.Bold)
-                            }
-                        }
-                    )
-                }
-            }
 
-            // CONTENT
-            if (viewMode == 0) {
-                // AGENDA HARIAN VIEW
-                Column(modifier = Modifier.fillMaxSize()) {
-                    // Day Filter Chips
+                        // Current Selected Day Title & Indicator
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = SchoolBellConfig.getDayName(selectedDay).uppercase(),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            if (selectedDay == currentRealDay) {
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = MaterialTheme.colorScheme.primary
+                                ) {
+                                    Text(
+                                        text = "HARI INI",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onPrimary,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                        fontSize = 10.sp
+                                    )
+                                }
+                            }
+                            val count = daySchedules.size
+                            Text(
+                                text = "($count Jadwal)",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        // Next Day Button
+                        IconButton(
+                            onClick = {
+                                val next = if (selectedDay >= 6) 1 else selectedDay + 1
+                                viewModel.setSelectedDay(next)
+                            },
+                            modifier = Modifier.size(38.dp).testTag("btn_next_day")
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                contentDescription = "Hari Berikutnya",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+
+                    // Quick Day Chips (Senin .. Sabtu)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .horizontalScroll(rememberScrollState())
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            .padding(horizontal = 12.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         for (day in 1..6) {
                             val count = allSchedules.count { it.dayOfWeek == day }
+                            val isSelected = selectedDay == day
                             FilterChip(
-                                selected = selectedDay == day,
+                                selected = isSelected,
                                 onClick = { viewModel.setSelectedDay(day) },
                                 label = {
                                     Text(
                                         text = "${SchoolBellConfig.getDayName(day)}${if (count > 0) " ($count)" else ""}",
-                                        fontWeight = if (selectedDay == day) FontWeight.Bold else FontWeight.Normal
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        fontSize = 12.5.sp
                                     )
                                 },
                                 colors = FilterChipDefaults.filterChipColors(
@@ -253,8 +299,68 @@ fun ScheduleScreen(
                         }
                     }
 
+                    // View Mode Switcher: Tabel Harian vs Kartu Agenda vs Matriks Mingguan
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        FilterChip(
+                            selected = viewMode == 0,
+                            onClick = { viewMode = 0 },
+                            leadingIcon = {
+                                Icon(Icons.Default.TableChart, contentDescription = null, modifier = Modifier.size(16.dp))
+                            },
+                            label = { Text("Tabel Harian", fontWeight = if (viewMode == 0) FontWeight.Bold else FontWeight.Normal) },
+                            modifier = Modifier.weight(1f).testTag("view_mode_table")
+                        )
+                        FilterChip(
+                            selected = viewMode == 1,
+                            onClick = { viewMode = 1 },
+                            leadingIcon = {
+                                Icon(Icons.Default.ViewAgenda, contentDescription = null, modifier = Modifier.size(16.dp))
+                            },
+                            label = { Text("Kartu", fontWeight = if (viewMode == 1) FontWeight.Bold else FontWeight.Normal) },
+                            modifier = Modifier.weight(0.8f).testTag("view_mode_cards")
+                        )
+                        FilterChip(
+                            selected = viewMode == 2,
+                            onClick = { viewMode = 2 },
+                            leadingIcon = {
+                                Icon(Icons.Default.CalendarViewMonth, contentDescription = null, modifier = Modifier.size(16.dp))
+                            },
+                            label = { Text("Mingguan", fontWeight = if (viewMode == 2) FontWeight.Bold else FontWeight.Normal) },
+                            modifier = Modifier.weight(1f).testTag("view_mode_matrix")
+                        )
+                    }
+                }
+            }
+
+            // MAIN CONTENT BASED ON VIEW MODE
+            when (viewMode) {
+                0 -> {
+                    // TABEL JADWAL HARIAN (PER HARI)
+                    DailyTimetableView(
+                        day = selectedDay,
+                        schedules = allSchedules,
+                        schoolConfig = schoolConfig,
+                        onCellClick = { day, period ->
+                            viewModel.openAddSchedule(defaultDay = day, defaultStartPeriod = period)
+                        },
+                        onScheduleClick = { item ->
+                            viewModel.openEditSchedule(item)
+                        },
+                        onToggleReminder = { item ->
+                            viewModel.toggleReminder(item)
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+
+                1 -> {
+                    // KARTU AGENDA HARIAN VIEW
                     if (daySchedules.isEmpty()) {
-                        // Empty State for selected day
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -299,7 +405,6 @@ fun ScheduleScreen(
                             }
                         }
                     } else {
-                        // List of classes on the selected day
                         LazyColumn(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -325,19 +430,21 @@ fun ScheduleScreen(
                         }
                     }
                 }
-            } else {
-                // TABEL JADWAL / MATRIX GRID VIEW (As seen on user photo)
-                TimetableGridView(
-                    schedules = allSchedules,
-                    schoolConfig = schoolConfig,
-                    onCellClick = { day, period ->
-                        viewModel.openAddSchedule(defaultDay = day, defaultStartPeriod = period)
-                    },
-                    onScheduleClick = { item ->
-                        viewModel.openEditSchedule(item)
-                    },
-                    modifier = Modifier.fillMaxSize()
-                )
+
+                2 -> {
+                    // TABEL MATRIKS MINGGUAN
+                    TimetableGridView(
+                        schedules = allSchedules,
+                        schoolConfig = schoolConfig,
+                        onCellClick = { day, period ->
+                            viewModel.openAddSchedule(defaultDay = day, defaultStartPeriod = period)
+                        },
+                        onScheduleClick = { item ->
+                            viewModel.openEditSchedule(item)
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
             }
         }
 

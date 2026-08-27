@@ -9,13 +9,23 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.NotificationsActive
-import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -36,8 +46,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -69,8 +83,23 @@ class MainActivity : ComponentActivity() {
         checkAndRequestNotificationPermission()
 
         setContent {
-            LishNgajarrTheme {
-                MainAppScreen(viewModel = viewModel)
+            val schoolConfig by viewModel.schoolConfig.collectAsState()
+            val systemDark = isSystemInDarkTheme()
+            val isDarkTheme = when (schoolConfig.themeMode) {
+                "LIGHT" -> false
+                "DARK" -> true
+                else -> systemDark
+            }
+
+            LishNgajarrTheme(darkTheme = isDarkTheme) {
+                MainAppScreen(
+                    viewModel = viewModel,
+                    isDarkTheme = isDarkTheme,
+                    onToggleTheme = {
+                        val newMode = if (isDarkTheme) "LIGHT" else "DARK"
+                        viewModel.saveSchoolConfig(schoolConfig.copy(themeMode = newMode))
+                    }
+                )
             }
         }
     }
@@ -90,7 +119,11 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainAppScreen(viewModel: ScheduleViewModel) {
+fun MainAppScreen(
+    viewModel: ScheduleViewModel,
+    isDarkTheme: Boolean = false,
+    onToggleTheme: () -> Unit = {}
+) {
     var selectedTab by remember { mutableIntStateOf(0) } // 0 = Jadwal, 1 = Pengaturan
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -110,21 +143,48 @@ fun MainAppScreen(viewModel: ScheduleViewModel) {
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    Text(
-                        text = if (selectedTab == 0) schoolConfig.schoolName else "Pengaturan Aplikasi",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = if (selectedTab == 0) schoolConfig.schoolName else "Pengaturan Aplikasi",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                 },
                 navigationIcon = {
-                    Icon(
-                        imageVector = Icons.Default.School,
-                        contentDescription = "LishNgajarr",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(start = 16.dp)
-                    )
+                    Box(
+                        modifier = Modifier
+                            .padding(start = 12.dp)
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.img_simple_logo_1787738398485),
+                            contentDescription = "Logo Jadwal Mengajar",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
                 },
                 actions = {
+                    // Quick Dark / Light Theme Toggle Button
+                    IconButton(
+                        onClick = onToggleTheme,
+                        modifier = Modifier.testTag("topbar_theme_toggle")
+                    ) {
+                        Icon(
+                            imageVector = if (isDarkTheme) Icons.Default.LightMode else Icons.Default.DarkMode,
+                            contentDescription = if (isDarkTheme) "Beralih ke Tema Terang" else "Beralih ke Tema Gelap",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
                     if (selectedTab == 0) {
                         IconButton(
                             onClick = { viewModel.testNotification() },
@@ -195,4 +255,5 @@ fun MainAppScreen(viewModel: ScheduleViewModel) {
         )
     }
 }
+
 

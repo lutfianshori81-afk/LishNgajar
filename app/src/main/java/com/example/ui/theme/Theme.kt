@@ -8,24 +8,29 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
     primary = DarkPrimary,
-    onPrimary = Color(0xFF001050),
+    onPrimary = DarkOnPrimary,
     primaryContainer = DarkPrimaryContainer,
-    onPrimaryContainer = Color(0xFFE8EAF6),
-    secondary = Color(0xFF9FA8DA),
-    onSecondary = Color(0xFF1A237E),
-    secondaryContainer = Color(0xFF283593),
-    onSecondaryContainer = Color(0xFFEDE7F6),
+    onPrimaryContainer = DarkOnPrimaryContainer,
+    secondary = DarkSecondary,
+    onSecondary = DarkOnSecondary,
+    secondaryContainer = DarkSecondaryContainer,
+    onSecondaryContainer = DarkOnSecondaryContainer,
+    tertiary = DarkTertiary,
+    onTertiary = DarkOnTertiary,
+    tertiaryContainer = DarkTertiaryContainer,
+    onTertiaryContainer = DarkOnTertiaryContainer,
     background = DarkBackground,
-    onBackground = Color(0xFFE2E2E6),
+    onBackground = DarkOnBackground,
     surface = DarkSurface,
-    onSurface = Color(0xFFE2E2E6),
-    surfaceVariant = Color(0xFF24272D),
-    onSurfaceVariant = Color(0xFFC4C6CF)
+    onSurface = DarkOnSurface,
+    surfaceVariant = DarkSurfaceVariant,
+    onSurfaceVariant = DarkOnSurfaceVariant,
+    outline = DarkOutline,
+    outlineVariant = DarkOutlineVariant
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -46,7 +51,9 @@ private val LightColorScheme = lightColorScheme(
     surface = LightSurface,
     onSurface = LightOnSurface,
     surfaceVariant = LightSurfaceVariant,
-    onSurfaceVariant = LightOnSurfaceVariant
+    onSurfaceVariant = LightOnSurfaceVariant,
+    outline = LightOutline,
+    outlineVariant = LightOutlineVariant
 )
 
 @Composable
@@ -70,3 +77,4 @@ fun LishNgajarrTheme(
         content = content
     )
 }
+

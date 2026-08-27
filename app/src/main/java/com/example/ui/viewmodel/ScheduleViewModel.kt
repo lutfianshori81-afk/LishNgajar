@@ -65,14 +65,7 @@ class ScheduleViewModel(application: Application) : AndroidViewModel(application
 
     init {
         viewModelScope.launch {
-            allSchedules.collect { list ->
-                if (list.isEmpty()) {
-                    // Check direct database and load sample SMK data if empty
-                    val config = repository.getSchoolConfigDirect()
-                    if (config.schoolName == "SMK Negeri 1 Pringapus") {
-                        repository.loadSampleSMKData()
-                    }
-                }
+            allSchedules.collect {
                 updateTodayStatus()
             }
         }
